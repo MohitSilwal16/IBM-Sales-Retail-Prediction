@@ -1,0 +1,155 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="min-h-screen bg-gray-100 flex">
+  <!-- Sidebar (Desktop Only) -->
+  <aside
+    class="hidden lg:flex lg:flex-col w-64 bg-white shadow-lg p-6 justify-between"
+  >
+    <div>
+      <h2 class="text-2xl font-semibold text-gray-800 mb-8">
+        Retail Sales Analysis
+      </h2>
+
+      <nav class="space-y-3">
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-lg bg-blue-100 text-blue-700 font-medium"
+        >
+          Dashboard
+        </a>
+        <a href="#upload" class="block px-3 py-2 rounded-lg hover:bg-gray-100">
+          Upload Files
+        </a>
+        <a
+          href="#analytics"
+          class="block px-3 py-2 rounded-lg hover:bg-gray-100"
+        >
+          Analytics
+        </a>
+      </nav>
+    </div>
+
+    <div>
+      <p class="text-sm text-gray-500 mb-2">Logged in as</p>
+      <p class="font-medium text-gray-700 mb-4">{{ user }}</p>
+
+      <a
+        href="/logout"
+        class="block w-full text-center bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"
+      >
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col">
+    <!-- Top Navbar (Mobile & Tablet) -->
+    <header
+      class="lg:hidden bg-white shadow px-6 py-4 flex justify-between items-center"
+    >
+      <h2 class="text-lg font-semibold text-gray-800">
+        Retail Sales Analytics
+      </h2>
+      <a
+        href="/logout"
+        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+      >
+        Logout
+      </a>
+    </header>
+
+    <!-- Page Content -->
+    <main class="flex-1 p-6 sm:p-8 lg:p-10 space-y-10">
+      <!-- Welcome -->
+      <section>
+        <h1 class="text-2xl sm:text-3xl font-semibold text-gray-800">
+          Welcome, {{ user }} 👋
+        </h1>
+        <p class="text-gray-500 mt-2">
+          Manage your datasets and explore analytics.
+        </p>
+      </section>
+
+      <!-- Upload Section -->
+      <section id="upload" class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4">Upload Data Files</h2>
+
+        <form class="flex flex-col sm:flex-row gap-4">
+          <input
+            type="file"
+            class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          <button
+            type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
+          >
+            Upload
+          </button>
+        </form>
+      </section>
+
+      <!-- Uploaded Files -->
+      <section class="bg-white p-6 rounded-2xl shadow overflow-x-auto">
+        <h2 class="text-xl font-semibold mb-4">Uploaded Files</h2>
+
+        <table class="min-w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b">
+              <th class="py-2 pr-4">File Name</th>
+              <th class="py-2 pr-4">Size</th>
+              <th class="py-2 pr-4">Uploaded</th>
+              <th class="py-2 pr-4">Status</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-600">
+            <tr class="border-b hover:bg-gray-50">
+              <td class="py-2 pr-4">sales_data.csv</td>
+              <td class="py-2 pr-4">2.3 MB</td>
+              <td class="py-2 pr-4">2026-02-18</td>
+              <td class="py-2 pr-4 text-green-600 font-medium">Processed</td>
+            </tr>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="py-2 pr-4">forecast_input.xlsx</td>
+              <td class="py-2 pr-4">1.1 MB</td>
+              <td class="py-2 pr-4">2026-02-15</td>
+              <td class="py-2 pr-4 text-yellow-600 font-medium">Pending</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Analytics -->
+      <section id="analytics" class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-6">Analytics</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div class="bg-gray-50 rounded-xl p-6 text-center">
+            <h3 class="font-medium text-gray-700 mb-3">Sales Trend</h3>
+            <div class="h-40 flex items-center justify-center text-gray-400">
+              [ Graph Placeholder ]
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-6 text-center">
+            <h3 class="font-medium text-gray-700 mb-3">
+              Category Distribution
+            </h3>
+            <div class="h-40 flex items-center justify-center text-gray-400">
+              [ Chart Placeholder ]
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-6 text-center">
+            <h3 class="font-medium text-gray-700 mb-3">Forecast Accuracy</h3>
+            <div class="h-40 flex items-center justify-center text-gray-400">
+              [ Metric Placeholder ]
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+{% endblock %}

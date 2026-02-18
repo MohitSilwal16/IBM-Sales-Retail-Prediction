@@ -1,0 +1,18 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/web/data
+    develop:
+      watch:
+        - action: sync
+          path: ./web
+          target: /web/web
+        - action: rebuild
+          path: requirements.txt
