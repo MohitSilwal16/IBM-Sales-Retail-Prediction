@@ -11,6 +11,7 @@
 
     <form method="post" action="/login" class="space-y-5">
       <div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
         <label class="block text-sm font-medium text-gray-600 mb-1">
           Username
         </label>

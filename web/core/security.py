@@ -1,7 +1,12 @@
-from passlib.context import CryptContext
+import secrets
 import hashlib
+from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def generate_csrf_token():
+    return secrets.token_urlsafe(32)
 
 
 def hash_password(password: str) -> str:

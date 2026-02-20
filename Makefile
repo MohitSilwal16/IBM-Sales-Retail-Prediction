@@ -3,7 +3,7 @@
 dev:
 	docker compose -f compose.dev.yaml down -v
 	docker compose -f compose.dev.yaml build --no-cache
-	docker compose -f compose.dev.yaml up
+	docker compose -f compose.dev.yaml up -w
 
 prod:
 	docker compose -f compose.prod.yaml down
