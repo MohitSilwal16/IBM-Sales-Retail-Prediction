@@ -1,0 +1,6 @@
+Dev = MinIO, SQLite
+Prod = S3, RDS
+
+Input Sanitization to Prevent XSS
+
+Tests, Automated Test

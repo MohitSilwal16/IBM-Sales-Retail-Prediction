@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data:/web/data
+      - ./data/sqlite:/web/data
     develop:
       watch:
         - action: sync
@@ -16,3 +16,16 @@ services:
           target: /web/web
         - action: rebuild
           path: requirements.txt
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console UI
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./data/minio:/data

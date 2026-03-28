@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def generate_csrf_token():
+def generate_csrf_token() -> str:
     return secrets.token_urlsafe(32)
 
 

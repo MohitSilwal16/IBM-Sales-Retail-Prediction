@@ -1,92 +1,92 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-import uuid
+from botocore.client import BaseClient
 
-from web.db.session import get_db
-from web.models.file import FileMetadata
+from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, UploadFile, File, Depends, Request
+
+from web.models.user import User
+from web.utils.file_utils import get_file_size
+from web.db.session import get_db, get_s3_client
+from web.core.dependencies import require_user, is_csrf_token_verified
 from web.services.s3_service import upload_file_to_s3, delete_file_from_s3
+from web.services.metadata_service import create_file_metadata, delete_file_by_user_id
 
-router = APIRouter(prefix="/files", tags=["Files"])
+router = APIRouter(
+    prefix="/files",
+    tags=["Files"],
+    default_response_class=HTMLResponse,
+    dependencies=[Depends(require_user), Depends(is_csrf_token_verified)],
+)
 
 
 @router.post("/")
 async def upload_csv(
-    request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)
-):
-    if "user_id" not in request.session:
-        raise HTTPException(status_code=401)
-
-    if not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV allowed")
-
-    unique_key = f"{request.session['user_id']}/{uuid.uuid4()}_{file.filename}"
-
-    upload_file_to_s3(file.file, unique_key, file.content_type)
-
-    metadata = FileMetadata(
-        user_id=request.session["user_id"],
-        original_filename=file.filename,
-        s3_key=unique_key,
-        content_type=file.content_type,
-        size=0,  # optionally compute
-    )
-
-    db.add(metadata)
-    db.commit()
-    db.refresh(metadata)
-
-    return {"message": "Uploaded", "file_id": metadata.file_id}
-
-
-@router.get("/")
-def list_files(request: Request, db: Session = Depends(get_db)):
-    if "user_id" not in request.session:
-        raise HTTPException(status_code=401)
-
-    files = (
-        db.query(FileMetadata)
-        .filter(FileMetadata.user_id == request.session["user_id"])
-        .all()
-    )
-
-    return files
-
-
-@router.put("/{file_id}")
-async def overwrite_file(
-    file_id: int,
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    s3: BaseClient = Depends(get_s3_client),
+    user: User = Depends(require_user),
+    csrf_token_verified=Depends(is_csrf_token_verified),
 ):
-    metadata = (
-        db.query(FileMetadata)
-        .filter_by(file_id=file_id, user_id=request.session["user_id"])
-        .first()
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    if not csrf_token_verified:
+        request.session["flash"] = {"type": "error", "msg": "Invalid CSRF"}
+        return RedirectResponse("/", status_code=303)
+
+    if not file.filename.endswith(".csv"):
+        request.session["flash"] = {
+            "type": "error",
+            "msg": "Only CSV files allowed",
+        }
+        return RedirectResponse("/", status_code=303)
+
+    file_size = get_file_size(file.file)
+    s3_key = f"{user.user_id}/{file.filename}"
+
+    upload_file_to_s3(s3, file.file, s3_key, file.content_type)
+    create_file_metadata(
+        db,
+        user.user_id,
+        file.filename,
+        s3_key,
+        file.content_type,
+        file_size,
     )
 
-    if not metadata:
-        raise HTTPException(status_code=404)
+    request.session["flash"] = {
+        "type": "success",
+        "msg": f"{file.filename} Uploaded Successfully",
+    }
 
-    upload_file_to_s3(file.file, metadata.s3_key, file.content_type)
-
-    return {"message": "File overwritten"}
+    return RedirectResponse("/", status_code=303)
 
 
-@router.delete("/{file_id}")
-def delete_file(file_id: int, request: Request, db: Session = Depends(get_db)):
-    metadata = (
-        db.query(FileMetadata)
-        .filter_by(file_id=file_id, user_id=request.session["user_id"])
-        .first()
-    )
+@router.post("/{file_name}")
+def delete_file(
+    request: Request,
+    file_name: str,
+    db: Session = Depends(get_db),
+    s3: BaseClient = Depends(get_s3_client),
+    user: User = Depends(require_user),
+    csrf_token_verified=Depends(is_csrf_token_verified),
+):
+    if not user:
+        return RedirectResponse("/login", status_code=303)
 
-    if not metadata:
-        raise HTTPException(status_code=404)
+    if not csrf_token_verified:
+        request.session["flash"] = {"type": "error", "msg": "Invalid CSRF"}
+        return RedirectResponse("/", status_code=303)
 
-    delete_file_from_s3(metadata.s3_key)
+    s3_key = f"{user.user_id}/{file_name}"
 
-    db.delete(metadata)
-    db.commit()
+    delete_file_by_user_id(db, user.user_id, file_name)
+    delete_file_from_s3(s3, s3_key)
 
-    return {"message": "Deleted"}
+    request.session["flash"] = {
+        "type": "success",
+        "msg": f"{file_name} deleted successfully",
+    }
+
+    return RedirectResponse("/", status_code=303)

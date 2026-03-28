@@ -1,19 +1,16 @@
-import boto3
-from app.core.config import settings
+from typing import BinaryIO
+from botocore.client import BaseClient
 
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    region_name=settings.AWS_REGION,
-)
+from web.core.config import settings
 
 
-def upload_file_to_s3(file_obj, key, content_type):
+def upload_file_to_s3(
+    s3: BaseClient, file_obj: BinaryIO, key: str, content_type: str
+) -> None:
     s3.upload_fileobj(
         file_obj, settings.S3_BUCKET_NAME, key, ExtraArgs={"ContentType": content_type}
     )
 
 
-def delete_file_from_s3(key):
+def delete_file_from_s3(s3: BaseClient, key: str) -> None:
     s3.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=key)

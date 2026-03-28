@@ -9,7 +9,11 @@
 
     <form method="post" action="/register" class="space-y-5">
       <div>
-        <label class="block text-sm font-medium text-gray-600 mb-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <label
+          for="username"
+          class="block text-sm font-medium text-gray-600 mb-1"
+        >
           Username
         </label>
         <input
@@ -22,7 +26,10 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-600 mb-1">
+        <label
+          for="password"
+          class="block text-sm font-medium text-gray-600 mb-1"
+        >
           Password
         </label>
         <input
@@ -33,6 +40,22 @@
           placeholder="Create a password"
         />
       </div>
+
+      {% if flash %}
+      <div
+        class="rounded-xl p-5 mb-4 shadow {% if flash.type == 'success' %} bg-green-50 border border-green-200 text-green-700 {% else %} bg-red-50 border border-red-200 text-red-700 {% endif %}"
+      >
+        <div class="flex justify-between items-center">
+          <span class="font-medium">{{ flash.msg }}</span>
+          <button
+            onclick="this.parentElement.parentElement.remove()"
+            class="text-sm opacity-61 hover:opacity-100"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      {% endif %}
 
       <button
         type="submit"

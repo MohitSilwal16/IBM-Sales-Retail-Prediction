@@ -1,43 +1,75 @@
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from web.core.security import generate_csrf_token
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Form, Depends
+
+from web.models.user import User
 from web.db.session import get_db
+from web.core.dependencies import (
+    require_user,
+    is_csrf_token_verified,
+    attach_csrf_token,
+)
+from web.core.security import generate_csrf_token
 from web.services.auth_service import (
     create_user,
     authenticate_user,
-    get_user_by_user_id,
 )
+from web.services.metadata_service import list_uploaded_files_by_user_id
 
-router = APIRouter()
+router = APIRouter(default_response_class=HTMLResponse)
 templates = Jinja2Templates(directory="web/templates")
 
 
-@router.get("/register", response_class=HTMLResponse)
-def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+@router.get("/register")
+def register_page(
+    request: Request,
+    csrf_token=Depends(attach_csrf_token),
+):
+    flash = request.session.pop("flash", None)
+
+    return templates.TemplateResponse(
+        request,
+        "register.html",
+        {
+            "csrf_token": csrf_token,
+            "flash": flash,
+        },
+    )
 
 
 @router.post("/register")
 def register(
-    username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+    csrf_token_verified=Depends(is_csrf_token_verified),
 ):
-    create_user(db, username, password)
+    if not csrf_token_verified:
+        request.session["flash"] = {"type": "error", "msg": "Invalid CSRF"}
+        return RedirectResponse("/register", status_code=303)
+
+    user = create_user(db, username, password)
+    request.session["user_id"] = user.user_id
+
     return RedirectResponse("/", status_code=303)
 
 
-@router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
-    if "csrf_token" not in request.session:
-        request.session["csrf_token"] = generate_csrf_token()
+@router.get("/login")
+def login_page(
+    request: Request,
+    csrf_token=Depends(attach_csrf_token),
+):
+    flash = request.session.pop("flash", None)
 
     return templates.TemplateResponse(
+        request,
         "login.html",
         {
-            "request": request,
-            "csrf_token": request.session["csrf_token"],
+            "csrf_token": csrf_token,
+            "flash": flash,
         },
     )
 
@@ -47,36 +79,47 @@ def login(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    csrf_token: str = Form(...),
     db: Session = Depends(get_db),
+    csrf_token_verified=Depends(is_csrf_token_verified),
 ):
-    if csrf_token != request.session.get("csrf_token"):
-        raise HTTPException(status_code=403, detail="Invalid CSRF token")
+    if not csrf_token_verified:
+        request.session["flash"] = {"type": "error", "msg": "Invalid CSRF"}
+        return RedirectResponse("/login", status_code=303)
 
     user = authenticate_user(db, username, password)
     if not user:
+        request.session["flash"] = {"type": "error", "msg": "Incorrect Credentials"}
         return RedirectResponse("/login", status_code=303)
 
     request.session["user_id"] = user.user_id
     return RedirectResponse("/", status_code=303)
 
 
-@router.get("/", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db)):
-    if "user_id" not in request.session:
+@router.get("/")
+def home_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+    csrf_token=Depends(attach_csrf_token),
+):
+    if not user:
         return RedirectResponse("/login", status_code=303)
 
-    if "csrf_token" not in request.session:
-        request.session["csrf_token"] = generate_csrf_token()
+    uploaded_files = list_uploaded_files_by_user_id(
+        db,
+        user.user_id,
+    )
 
-    user = get_user_by_user_id(db, request.session["user_id"])
+    flash = request.session.pop("flash", None)
 
     return templates.TemplateResponse(
-        "dashboard.html",
+        request,
+        "home.html",
         {
-            "request": request,
             "user": user.username,
-            "csrf_token": request.session["csrf_token"],
+            "files": uploaded_files,
+            "csrf_token": csrf_token,
+            "flash": flash,
         },
     )
 
@@ -84,4 +127,4 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/login", status_code=303)

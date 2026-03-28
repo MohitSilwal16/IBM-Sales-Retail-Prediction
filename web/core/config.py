@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str
     AWS_REGION: str
     S3_BUCKET_NAME: str
+    S3_ENDPOINT_URL: str
 
     class Config:
         env_file = ".env"
