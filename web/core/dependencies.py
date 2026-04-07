@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 
 from fastapi import Request, Depends, Form
 
+from web.models.user import User
 from web.db.session import get_db
 from web.core.security import generate_csrf_token
-from web.models.user import User
 from web.services.auth_service import get_user_by_user_id
 
 

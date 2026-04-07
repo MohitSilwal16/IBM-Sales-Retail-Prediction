@@ -5,11 +5,9 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi import APIRouter, UploadFile, File, Depends, Request
 
 from web.models.user import User
-from web.utils.file_utils import get_file_size
-from web.db.session import get_db, get_s3_client
+from web.db.session import get_s3_client
 from web.core.dependencies import require_user, is_csrf_token_verified
 from web.services.s3_service import upload_file_to_s3, delete_file_from_s3
-from web.services.metadata_service import create_file_metadata, delete_file_by_user_id
 
 router = APIRouter(
     prefix="/files",
@@ -23,7 +21,6 @@ router = APIRouter(
 async def upload_csv(
     request: Request,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
     s3: BaseClient = Depends(get_s3_client),
     user: User = Depends(require_user),
     csrf_token_verified=Depends(is_csrf_token_verified),
@@ -42,18 +39,8 @@ async def upload_csv(
         }
         return RedirectResponse("/", status_code=303)
 
-    file_size = get_file_size(file.file)
-    s3_key = f"{user.user_id}/{file.filename}"
-
+    s3_key = f"files/{user.user_id}/{file.filename}"
     upload_file_to_s3(s3, file.file, s3_key, file.content_type)
-    create_file_metadata(
-        db,
-        user.user_id,
-        file.filename,
-        s3_key,
-        file.content_type,
-        file_size,
-    )
 
     request.session["flash"] = {
         "type": "success",
@@ -67,7 +54,6 @@ async def upload_csv(
 def delete_file(
     request: Request,
     file_name: str,
-    db: Session = Depends(get_db),
     s3: BaseClient = Depends(get_s3_client),
     user: User = Depends(require_user),
     csrf_token_verified=Depends(is_csrf_token_verified),
@@ -79,9 +65,7 @@ def delete_file(
         request.session["flash"] = {"type": "error", "msg": "Invalid CSRF"}
         return RedirectResponse("/", status_code=303)
 
-    s3_key = f"{user.user_id}/{file_name}"
-
-    delete_file_by_user_id(db, user.user_id, file_name)
+    s3_key = f"files/{user.user_id}/{file_name}"
     delete_file_from_s3(s3, s3_key)
 
     request.session["flash"] = {

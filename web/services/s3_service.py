@@ -12,5 +12,11 @@ def upload_file_to_s3(
     )
 
 
+def list_files_by_prefix(s3: BaseClient, prefix: str) -> list[dict]:
+    files = s3.list_objects_v2(Bucket=settings.S3_BUCKET_NAME, Prefix=prefix)
+
+    return files.get("Contents", [])
+
+
 def delete_file_from_s3(s3: BaseClient, key: str) -> None:
     s3.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=key)

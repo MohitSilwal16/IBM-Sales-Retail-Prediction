@@ -1,22 +1,19 @@
 from sqlalchemy.orm import Session
+from botocore.client import BaseClient
 
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import APIRouter, Request, Form, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from web.models.user import User
-from web.db.session import get_db
+from web.services.s3_service import list_files_by_prefix
+from web.db.session import get_db, get_s3_client
+from web.services.auth_service import create_user, authenticate_user
 from web.core.dependencies import (
     require_user,
     is_csrf_token_verified,
     attach_csrf_token,
 )
-from web.core.security import generate_csrf_token
-from web.services.auth_service import (
-    create_user,
-    authenticate_user,
-)
-from web.services.metadata_service import list_uploaded_files_by_user_id
 
 router = APIRouter(default_response_class=HTMLResponse)
 templates = Jinja2Templates(directory="web/templates")
@@ -98,17 +95,15 @@ def login(
 @router.get("/")
 def home_page(
     request: Request,
-    db: Session = Depends(get_db),
+    s3: BaseClient = Depends(get_s3_client),
     user: User = Depends(require_user),
     csrf_token=Depends(attach_csrf_token),
 ):
     if not user:
         return RedirectResponse("/login", status_code=303)
 
-    uploaded_files = list_uploaded_files_by_user_id(
-        db,
-        user.user_id,
-    )
+    prefix = f"files/{user.user_id}"
+    uploaded_files = list_files_by_prefix(s3, prefix)
 
     flash = request.session.pop("flash", None)
 

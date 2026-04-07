@@ -11,3 +11,4 @@ pydantic-settings
 gunicorn
 boto3
 psycopg2-binary
+prophet
