@@ -5,12 +5,13 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /web
 
-COPY requirements.txt .
+COPY ./web/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./web ./web
 
-CMD ["uvicorn", "web.main:web", \
-    "--host", "0.0.0.0",\
-    "--port", "8000",\
-    "--reload"]
+CMD gunicorn \
+    -k uvicorn.workers.UvicornWorker \
+    -w 4 \
+    -b 0.0.0.0:8000 \
+    web.main:web

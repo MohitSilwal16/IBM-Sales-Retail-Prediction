@@ -1,21 +1,21 @@
 services:
   web:
     build:
-      context: .
-      dockerfile: Dockerfile.dev
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.dev
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - ../../env/dev.env
     volumes:
-      - ./data/sqlite:/web/data
+      - ../../data/sqlite:/web/data
     develop:
       watch:
         - action: sync
-          path: ./web
+          path: ../../web
           target: /web/web
         - action: rebuild
-          path: requirements.txt
+          path: ../../web/requirements.txt
 
   minio:
     image: minio/minio:latest
@@ -28,4 +28,4 @@ services:
       MINIO_ROOT_PASSWORD: admin123
     command: server /data --console-address ":9001"
     volumes:
-      - ./data/minio:/data
+      - ../../data/minio:/data

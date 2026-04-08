@@ -1,6 +1,10 @@
 Dev = MinIO, SQLite
 Prod = S3, RDS
 
-Input Sanitization to Prevent XSS
-
 Tests, Automated Test
+
+SQS to Train Model in SageMaker
+Train Model on Multiple Files or Merge It ?
+Model Training Progress
+Demo Data File Structure - Fixed Fields, Extra Fields
+Live Data Sync
