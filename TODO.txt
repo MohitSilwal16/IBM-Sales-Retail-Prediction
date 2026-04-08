@@ -1,0 +1,15 @@
+Dev = MinIO, SQLite
+Prod = S3, RDS
+
+Tests, Automated Test
+
+SQS to Train Model in SageMaker
+Train Model on Multiple Files or Merge It ?
+Model Training Progress
+Demo Data File Structure - Fixed Fields(Date),
+    Extra Fields(Attributes), No Quantity Field & Each Record is 1 Product
+Live Data Sync
+IMP IMP ReadME
+
+Prophet, SARIMA, LSTM, XGBoost
+Local SageMaker & SQS (Kafka)

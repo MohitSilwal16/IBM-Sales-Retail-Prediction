@@ -13,7 +13,6 @@ from web.routers import auth, files
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_s3()
-
     yield
 
 

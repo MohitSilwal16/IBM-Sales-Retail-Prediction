@@ -6,8 +6,8 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from web.models.user import User
-from web.services.s3_service import list_files_by_prefix
 from web.db.session import get_db, get_s3_client
+from web.services.s3_service import list_files_by_prefix_from_s3
 from web.services.auth_service import create_user, authenticate_user
 from web.core.dependencies import (
     require_user,
@@ -103,7 +103,7 @@ def home_page(
         return RedirectResponse("/login", status_code=303)
 
     prefix = f"files/{user.user_id}"
-    uploaded_files = list_files_by_prefix(s3, prefix)
+    uploaded_files = list_files_by_prefix_from_s3(s3, prefix)
 
     flash = request.session.pop("flash", None)
 
