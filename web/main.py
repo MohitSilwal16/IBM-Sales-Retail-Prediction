@@ -7,7 +7,7 @@ from web.db.base import Base
 from web.db.session import engine
 from web.core.config import settings
 from web.core.startup import init_s3
-from web.routers import auth, files
+from web.routers import auth, files, predict
 
 
 @asynccontextmanager
@@ -29,3 +29,4 @@ Base.metadata.create_all(bind=engine)
 
 web.include_router(auth.router)
 web.include_router(files.router)
+web.include_router(predict.router)

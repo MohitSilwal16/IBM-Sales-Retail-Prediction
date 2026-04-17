@@ -8,7 +8,7 @@ services:
     env_file:
       - ../../env/dev.env
     volumes:
-      - ../../data/sqlite:/web/data
+      - ../../tmp/sqlite:/web/data
     develop:
       watch:
         - action: sync
@@ -16,6 +16,21 @@ services:
           target: /web/web
         - action: rebuild
           path: ../../web/requirements.txt
+          
+  ml:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.dev
+    command: uvicorn ml.inference_server:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    develop:
+      watch:
+        - action: sync
+          path: ../../ml
+          target: /web/ml
+        - action: rebuild
+          path: ../../ml/requirements.txt
 
   minio:
     image: minio/minio:latest
@@ -28,4 +43,4 @@ services:
       MINIO_ROOT_PASSWORD: admin123
     command: server /data --console-address ":9001"
     volumes:
-      - ../../data/minio:/data
+      - ../../tmp/minio:/data

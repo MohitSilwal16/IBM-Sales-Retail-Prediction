@@ -2,7 +2,7 @@
 
 dev:
 	docker compose -f docker/dev/compose.dev.yaml down -v
-	docker compose -f docker/dev/compose.dev.yaml build --no-cache
+	docker compose -f docker/dev/compose.dev.yaml build
 	docker compose -f docker/dev/compose.dev.yaml up -w
 
 prod:

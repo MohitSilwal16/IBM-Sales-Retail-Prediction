@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     AWS_REGION: str
     S3_BUCKET_NAME: str
     S3_ENDPOINT_URL: str
-
+    INFERENCE_URL: str = "http://ml:8001"
     class Config:
         env_file = ".env"
 

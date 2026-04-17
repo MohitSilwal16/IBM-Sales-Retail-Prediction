@@ -109,7 +109,7 @@ def home_page(
 
     return templates.TemplateResponse(
         request,
-        "home.html",
+        "file.html",
         {
             "user": user.username,
             "files": uploaded_files,
@@ -123,3 +123,9 @@ def home_page(
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
+
+# TODO: TEMP
+@router.get("/analytics")
+def analytics(request: Request):
+    return templates.TemplateResponse(request, "analytics.html")

@@ -1,7 +1,12 @@
-Dev = MinIO, SQLite
-Prod = S3, RDS
+Clean latin chars from data
+Returns options with attributes
 
+Load Data in Chunks (During File Upload/Download Etc.)
+
+One Hot Encode Cols with less Vals Else Label Encode
 Tests, Automated Test
+
+Docker Auto Setup SSL Certificate 
 
 SQS to Train Model in SageMaker
 Train Model on Multiple Files or Merge It ?
@@ -13,3 +18,6 @@ IMP IMP ReadME
 
 Prophet, SARIMA, LSTM, XGBoost
 Local SageMaker & SQS (Kafka)
+
+Dev = MinIO, SQLite
+Prod = S3, RDS

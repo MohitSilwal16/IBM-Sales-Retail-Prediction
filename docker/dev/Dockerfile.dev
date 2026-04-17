@@ -5,10 +5,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /web
 
-COPY ./web/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
 COPY ./web ./web
+RUN pip install -r ./web/requirements.txt
+
+COPY ./ml ./ml
+RUN pip install -r ./ml/requirements.txt
 
 CMD uvicorn web.main:web \
     --host 0.0.0.0 \
