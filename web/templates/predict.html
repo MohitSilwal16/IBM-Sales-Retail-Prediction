@@ -1,54 +1,152 @@
-{% extends "home.html" %} {% set active_page = 'predict' %} {% block
-dashboard_content %}
-<div></div>
-{% set test_values = [ "Buddy Storbeck's Diesel Service Inc", "Ford",
-"Expedition", "Double\xa0Overhead Camshaft", "Auto", "Black", "SUV",
-"Middletown" ] %}
-
-<div class="max-w-3xl mx-auto">
-  <h1 class="text-2xl font-bold text-gray-800 mb-6">Predict Sales</h1>
-
-  <form method="post" class="bg-gray-50 rounded-xl p-6 space-y-5">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-        <input
-          type="date"
-          name="date"
-          value="2023-12-31"
-          class="w-full border border-gray-300 rounded-lg p-2.5"
-          required
-        />
-      </div>
-      {% for attr in attributes %}
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >{{ attr }}</label
-        >
-        <input
-          name="{{ attr }}"
-          value="{{ test_values[loop.index0] if loop.index0 < test_values|length else '' }}"
-          class="w-full border border-gray-300 rounded-lg p-2.5"
-          required
-        />
-      </div>
-      {% endfor %}
+{% extends "home.html" %}
+{% set active_page = "predict" %}
+{% block dashboard_content %}
+    <style>
+  .predict-card { background: var(--bg); border: 0.5px solid var(--border-color); border-radius: 12px; padding: 1.5rem; }
+  .field { margin-bottom: 1.25rem; }
+  .field label { display: block; font-size: 13px; color: #6b7280; margin-bottom: 6px; }
+  .field select, .field input[type=date] {
+    width: 100%; height: 36px; padding: 0 10px; font-size: 14px;
+    border: 1px solid #e5e7eb; border-radius: 8px; background: white; color: #111;
+  }
+  .field select:focus, .field input:focus { outline: none; border-color: #9ca3af; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .attr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .divider { border: none; border-top: 1px solid #f3f4f6; margin: 1.25rem 0; }
+  .submit-row { display: flex; align-items: center; gap: 16px; margin-top: 1.5rem; }
+  #submit-btn {
+    height: 36px; padding: 0 20px; font-size: 14px; font-weight: 500;
+    background: #111; color: white; border: none; border-radius: 8px; cursor: pointer;
+  }
+  #submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  #submit-btn:not(:disabled):hover { background: #333; }
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid #e5e7eb;
+    border-top-color: #111; border-radius: 50%;
+    animation: spin .7s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .result-box {
+    margin-top: 1.25rem; padding: 1rem 1.25rem;
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 12px; display: none;
+    align-items: center; justify-content: space-between;
+  }
+  .result-box.visible { display: flex; }
+  .result-label { font-size: 13px; color: #6b7280; }
+  .result-value { font-size: 26px; font-weight: 500; color: #111; }
+  .error-box {
+    margin-top: 1.25rem; padding: .875rem 1.25rem;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 8px; font-size: 14px; color: #b91c1c; display: none;
+  }
+  .error-box.visible { display: block; }
+    </style>
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-xl font-medium text-gray-800 mb-6">Predict sales</h1>
+        <div class="predict-card">
+            <input type="hidden" id="csrf_token" value="{{ csrf_token }}" />
+            <div class="field">
+                <label>Model</label>
+                <select id="file_name" required>
+                    <option value="">Select a trained model…</option>
+                    {% for model in models %}<option value="{{ model.model_id }}">{{ model.data_file_name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="grid2">
+                <div class="field">
+                    <label>From date</label>
+                    <input type="date" id="date" required />
+                </div>
+                <div class="field">
+                    <label>To date</label>
+                    <input type="date" id="to_date" required />
+                </div>
+            </div>
+            <div id="attr-section" style="display:none">
+                <div class="divider"></div>
+                <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">Model attributes</p>
+                <div class="attr-grid" id="attr-grid"></div>
+            </div>
+            <div class="submit-row">
+                <button type="button" id="submit-btn" disabled>Run prediction</button>
+                <div class="spinner" id="spinner"></div>
+            </div>
+            <div class="result-box" id="result-box">
+                <div class="result-label">Predicted sales count</div>
+                <div class="result-value" id="result-value">—</div>
+            </div>
+            <div class="error-box" id="error-box"></div>
+        </div>
     </div>
+    <script>
+const MODEL_ATTRIBUTES = {{ model_attributes | tojson }};
 
-    <button
-      type="submit"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition"
-    >
-      Predict
-    </button>
-  </form>
+const fileSel   = document.getElementById("file_name");
+const attrSec   = document.getElementById("attr-section");
+const attrGrid  = document.getElementById("attr-grid");
+const submitBtn = document.getElementById("submit-btn");
+const spinner   = document.getElementById("spinner");
+const resultBox = document.getElementById("result-box");
+const resultVal = document.getElementById("result-value");
+const errorBox  = document.getElementById("error-box");
 
-  {% if prediction is not none %}
-  <div
-    class="mt-6 p-5 bg-green-50 border border-green-200 rounded-xl text-green-800"
-  >
-    <span class="font-semibold">Predicted Sales:</span> {{ prediction }}
-  </div>
-  {% endif %}
-</div>
+fileSel.addEventListener("change", () => {
+  const id = fileSel.value;
+  attrGrid.innerHTML = "";
+  errorBox.classList.remove("visible");
+  resultBox.classList.remove("visible");
+
+  if (!id || !MODEL_ATTRIBUTES[id]) {
+    attrSec.style.display = "none";
+    submitBtn.disabled = true;
+    return;
+  }
+
+  Object.entries(MODEL_ATTRIBUTES[id]).forEach(([col, vals]) => {
+    const wrap = document.createElement("div");
+    wrap.className = "field";
+    wrap.innerHTML = `
+      <label>${col}</label>
+      <select name="${col}">
+        <option value="">Select ${col}…</option>
+        ${vals.map(v => `<option value="${v}">${v}</option>`).join("")}
+      </select>`;
+    attrGrid.appendChild(wrap);
+  });
+
+  attrSec.style.display = "block";
+  submitBtn.disabled = false;
+});
+
+submitBtn.addEventListener("click", async () => {
+  errorBox.classList.remove("visible");
+  resultBox.classList.remove("visible");
+  spinner.style.display = "block";
+  submitBtn.disabled = true;
+
+  const body = new FormData();
+  body.append("csrf_token", document.getElementById("csrf_token").value);
+  body.append("file_name", fileSel.value);
+  body.append("date", document.getElementById("date").value);
+  body.append("to-date", document.getElementById("to_date").value);
+  attrGrid.querySelectorAll("select").forEach(s => {
+   body.append(s.name, s.value);
+  });
+
+  try {
+    const res = await fetch("/predict", { method: "POST", body });
+    if (!res.ok) throw new Error(await res.text());
+    const { prediction } = await res.json();
+    resultVal.textContent = prediction.toLocaleString();
+    resultBox.classList.add("visible");
+  } catch (e) {
+    errorBox.textContent = "Prediction failed. Please try again.";
+    errorBox.classList.add("visible");
+  } finally {
+    spinner.style.display = "none";
+    submitBtn.disabled = false;
+  }
+});
+    </script>
 {% endblock %}

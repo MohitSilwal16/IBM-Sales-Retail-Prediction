@@ -3,15 +3,24 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /web
+WORKDIR /usr/src/app
 
-COPY ./web/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    docker.io \
+    curl \
+    && mkdir -p /usr/local/lib/docker/cli-plugins \
+    && curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" \
+       -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY ./web ./web
+COPY ./web/requirements.txt ./requirements.txt
+RUN pip install -r ./requirements.txt
+
+COPY ./web ./
 
 CMD gunicorn \
     -k uvicorn.workers.UvicornWorker \
-    -w 4 \
     -b 0.0.0.0:8000 \
-    web.main:web
+    main:web --reload

@@ -3,15 +3,24 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /web
+WORKDIR /usr/src/app
 
-COPY ./web ./web
-RUN pip install -r ./web/requirements.txt
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    docker.io \
+    curl \
+    && mkdir -p /usr/local/lib/docker/cli-plugins \
+    && curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" \
+       -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY ./ml ./ml
-RUN pip install -r ./ml/requirements.txt
+COPY ./web/requirements.txt ./requirements.txt
+RUN pip install -r ./requirements.txt
 
-CMD uvicorn web.main:web \
+COPY ./web ./
+
+CMD uvicorn main:web \
     --host 0.0.0.0 \
     --port 8000 \
     --reload

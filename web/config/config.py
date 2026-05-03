@@ -7,10 +7,14 @@ class Settings(BaseSettings):
 
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
+
     AWS_REGION: str
     S3_BUCKET_NAME: str
     S3_ENDPOINT_URL: str
-    INFERENCE_URL: str = "http://ml:8001"
+
+    SAGEMAKER_ROLE_ARN: str
+    SAGEMAKER_LOCAL_MODE: str
+
     class Config:
         env_file = ".env"
 
